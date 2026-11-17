@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>BBC P2P</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#070708; --card:#111113; --card2:#17171a; --line:#232327;
+    --txt:#f4f4f5; --mut:#8a8a93; --dim:#55555c;
+    --acc:#ffffff; --ok:#3ddc84; --bad:#ff5c5c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{background:var(--bg);color:var(--txt);font-family:Manrope,system-ui,sans-serif}
+  body{min-height:100vh;padding:18px 16px 120px;
+    background:radial-gradient(120% 60% at 50% -10%,#1c1c20 0%,var(--bg) 60%) fixed}
+  .mono{font-family:"JetBrains Mono",monospace}
+
+  /* header */
+  header{display:flex;align-items:center;gap:12px;margin-bottom:22px;animation:fade .5s ease}
+  .logo{width:46px;height:46px;border-radius:14px;background:#000;border:1px solid var(--line);
+    display:grid;place-items:center;overflow:hidden;box-shadow:0 0 30px rgba(255,255,255,.06)}
+  .logo img{width:100%;height:100%;object-fit:cover}
+  .logo span{font:800 22px Manrope,system-ui,sans-serif;color:#fff}
+  .brand b{display:block;font-size:18px;font-weight:800;letter-spacing:.3px}
+  .brand small{color:var(--mut);font-size:12.5px}
+  .pill{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+    padding:7px 11px;border-radius:99px;background:var(--card);border:1px solid var(--line)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok);animation:pulse 1.8s infinite}
+  .pill.off .dot{background:var(--bad);box-shadow:0 0 10px var(--bad)}
+
+  /* cards */
+  .card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);
+    border-radius:22px;padding:16px;animation:up .5s ease both}
+  .card+.card{margin-top:10px}
+  .lbl{display:flex;justify-content:space-between;color:var(--mut);font-size:12.5px;font-weight:600;
+    text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+  .row{display:flex;align-items:center;gap:10px}
+  .amount{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--txt);
+    font:700 34px "JetBrains Mono",monospace;letter-spacing:-1px}
+  .amount::placeholder{color:var(--dim)}
+  .badge{display:flex;align-items:center;gap:7px;padding:9px 12px;border-radius:14px;
+    background:#000;border:1px solid var(--line);font-weight:700;font-size:15px;white-space:nowrap}
+  .usdt{width:22px;height:22px;border-radius:50%;background:#26a17b;display:grid;place-items:center;
+    font-size:13px;font-weight:800;color:#fff}
+
+  .chips{display:flex;gap:8px;overflow-x:auto;margin-top:12px;scrollbar-width:none;padding-bottom:2px}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;padding:8px 13px;border-radius:12px;background:#0c0c0e;border:1px solid var(--line);
+    color:var(--mut);font-weight:600;font-size:13.5px;cursor:pointer;transition:.18s}
+  .chip:active{transform:scale(.95)}
+  .chip.on{background:#fff;color:#000;border-color:#fff}
+  .hint{color:var(--dim);font-size:12px;margin-top:10px}
+  .hint.err{color:var(--bad)}
+
+  .swap{display:grid;place-items:center;height:0;position:relative;z-index:2}
+  .swap div{width:38px;height:38px;border-radius:12px;background:#000;border:1px solid var(--line);
+    display:grid;place-items:center;margin-top:-4px;font-size:16px;color:var(--mut)}
+
+  .get{font:700 34px "JetBrains Mono",monospace;letter-spacing:-1px;flex:1;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color .2s}
+  .get.zero{color:var(--dim)}
+
+  .cur{flex:none;min-width:94px;padding:10px 12px;border-radius:14px;background:#0c0c0e;
+    border:1px solid var(--line);cursor:pointer;transition:.18s;text-align:left}
+  .cur:active{transform:scale(.96)}
+  .cur .f{font-size:18px}
+  .cur b{font-size:14px;margin-left:4px}
+  .cur small{display:block;color:var(--mut);font:500 11.5px "JetBrains Mono",monospace;margin-top:3px}
+  .cur.on{background:#fff;border-color:#fff;color:#000}
+  .cur.on small{color:#444}
+
+  .nets{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .net{padding:12px;border-radius:14px;background:#0c0c0e;border:1px solid var(--line);
+    font-weight:700;font-size:14px;cursor:pointer;transition:.18s;text-align:center}
+  .net small{display:block;color:var(--mut);font-weight:500;font-size:11.5px;margin-top:2px}
+  .net.on{background:#fff;color:#000;border-color:#fff}
+  .net.on small{color:#555}
+
+  textarea{width:100%;min-height:78px;resize:none;background:#0c0c0e;border:1px solid var(--line);
+    border-radius:14px;padding:12px 13px;color:var(--txt);font:500 15px Manrope,system-ui,sans-serif;outline:none;transition:.18s}
+  textarea:focus{border-color:#555}
+  textarea::placeholder{color:var(--dim)}
+
+  .rate{display:flex;justify-content:space-between;align-items:center;margin-top:14px;
+    padding:13px 16px;border-radius:16px;border:1px dashed var(--line);color:var(--mut);font-size:13px}
+  .rate b{color:var(--txt);font-family:"JetBrains Mono",monospace}
+  .note{text-align:center;color:var(--dim);font-size:11.5px;margin-top:14px;line-height:1.5}
+
+  #btn{position:fixed;left:16px;right:16px;bottom:18px;height:56px;border:none;border-radius:18px;
+    background:#fff;color:#000;font:800 16px Manrope,system-ui,sans-serif;cursor:pointer;transition:.2s;display:none}
+  #btn:disabled{background:#1d1d21;color:#55555c}
+
+  .closed{position:fixed;inset:0;background:rgba(7,7,8,.92);backdrop-filter:blur(8px);
+    display:none;place-items:center;text-align:center;padding:30px;z-index:10}
+  .closed div{font-size:46px;margin-bottom:12px}
+  .closed b{font-size:20px}
+  .closed p{color:var(--mut);margin-top:8px}
+
+  @keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  @keyframes pulse{50%{opacity:.35}}
+  @keyframes bump{40%{transform:scale(1.04)}}
+  .bump{animation:bump .25s ease}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><img src="logo.png" alt="" onload="this.nextElementSibling.remove()" onerror="this.remove()"><span>B</span></div>
+  <div class="brand"><b>BBC P2P</b><small>Обмен USDT → фиат</small></div>
+  <div class="pill" id="pill"><i class="dot"></i><span id="pillTxt">онлайн</span></div>
+</header>
+
+<div class="card" style="animation-delay:.05s">
+  <div class="lbl"><span>Отдаёшь</span><span id="lim"></span></div>
+  <div class="row">
+    <input id="amt" class="amount" type="text" inputmode="decimal" placeholder="0" autocomplete="off">
+    <div class="badge"><span class="usdt">₮</span>USDT</div>
+  </div>
+  <div class="chips" id="quick"></div>
+  <div class="hint" id="amtHint"></div>
+</div>
+
+<div class="swap"><div>↓</div></div>
+
+<div class="card" style="animation-delay:.1s">
+  <div class="lbl"><span>Получаешь</span><span id="curName"></span></div>
+  <div class="row"><div class="get zero" id="get">0</div></div>
+  <div class="chips" id="curs" style="margin-top:14px"></div>
+</div>
+
+<div class="card" style="animation-delay:.15s">
+  <div class="lbl"><span>Сеть перевода</span></div>
+  <div class="nets" id="nets"></div>
+</div>
+
+<div class="card" style="animation-delay:.2s">
+  <div class="lbl"><span>Реквизиты для выплаты</span></div>
+  <textarea id="req" maxlength="200" placeholder="Номер карты, банк, ФИО получателя"></textarea>
+</div>
+
+<div class="rate"><span>Курс</span><b id="rate">—</b></div>
+<p class="note">🔒 Итоговый курс фиксируется в боте при подтверждении заявки.<br>Адрес для перевода USDT бот пришлёт после подтверждения.</p>
+
+<button id="btn" disabled>Создать заявку</button>
+
+<div class="closed" id="closed"><section><div>🌙</div><b>Приём заявок закрыт</b><p>Загляни чуть позже — мы скоро откроемся</p></section></div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+const inTG = !!(tg && tg.initData);
+
+const META = {
+  UAH:["🇺🇦","Гривна","₴",2], RUB:["🇷🇺","Рубль","₽",2], USD:["🇺🇸","Доллар","$",2],
+  EUR:["🇪🇺","Евро","€",2], PLN:["🇵🇱","Злотый","zł",2], KZT:["🇰🇿","Тенге","₸",0],
+  BYN:["🇧🇾","Бел. рубль","Br",2], GEL:["🇬🇪","Лари","₾",2], TRY:["🇹🇷","Лира","₺",2],
+  UZS:["🇺🇿","Сум","сум",0], GBP:["🇬🇧","Фунт","£",2], CZK:["🇨🇿","Крона","Kč",2]
+};
+const NETS = {TRC20:"Tron", BEP20:"BSC", TON:"The Open Network", ERC20:"Ethereum"};
+
+/* данные приходят от бота в ссылке: ?d=<base64url(JSON)> */
+function readData(){
+  try{
+    const d = new URLSearchParams(location.search).get("d");
+    const b64 = d.replace(/-/g,"+").replace(/_/g,"/");
+    return JSON.parse(decodeURIComponent(escape(atob(b64))));
+  }catch(e){
+    // демо-данные для просмотра в обычном браузере
+    return {b:"UAH", r:{UAH:46,RUB:88.67,USD:1.11,EUR:.95,KZT:565}, n:["TRC20","BEP20","TON"], mn:10, mx:10000, o:1};
+  }
+}
+const D = readData();
+const curList = Object.keys(D.r).filter(c => META[c]);
+let st = {cur: D.b in D.r ? D.b : curList[0], net: D.n[0], amt: 0};
+
+const $ = id => document.getElementById(id);
+const fmt = (x, c) => {
+  const d = c ? META[c][3] : 2;
+  return x.toLocaleString("ru-RU",{minimumFractionDigits:d, maximumFractionDigits:d}).replace(/,/g,".");
+};
+const haptic = t => { try{ tg?.HapticFeedback?.selectionChanged(); }catch(e){} };
+const store = {
+  get(k){ try{ return localStorage.getItem(k) }catch(e){ return null } },
+  set(k,v){ try{ localStorage.setItem(k,v) }catch(e){} }
+};
+
+/* ── рендер ── */
+function renderCurs(){
+  $("curs").innerHTML = curList.map(c => `
+    <div class="cur ${c===st.cur?"on":""}" data-c="${c}">
+      <span class="f">${META[c][0]}</span><b>${c}</b>
+      <small>${fmt(D.r[c],c)} ${META[c][2]}</small>
+    </div>`).join("");
+}
+function renderNets(){
+  $("nets").innerHTML = D.n.map(n => `
+    <div class="net ${n===st.net?"on":""}" data-n="${n}">${n}<small>${NETS[n]||""}</small></div>`).join("");
+  if (D.n.length === 1) $("nets").style.gridTemplateColumns = "1fr";
+}
+function renderQuick(){
+  const q = [50,100,250,500,1000,2500].filter(v => v>=D.mn && v<=D.mx);
+  $("quick").innerHTML = q.map(v => `<div class="chip" data-v="${v}">${v}</div>`).join("") +
+    `<div class="chip" data-v="max">MAX</div>`;
+}
+function calc(){
+  const r = D.r[st.cur], sym = META[st.cur][2];
+  const total = st.amt * r;
+  const g = $("get");
+  g.textContent = st.amt ? `${fmt(total, st.cur)} ${sym}` : `0 ${sym}`;
+  g.classList.toggle("zero", !st.amt);
+  g.classList.remove("bump"); void g.offsetWidth; if (st.amt) g.classList.add("bump");
+  $("curName").textContent = `${META[st.cur][0]} ${META[st.cur][1]}`;
+  $("rate").textContent = `1 USDT = ${fmt(r, st.cur)} ${sym}`;
+
+  const okAmt = st.amt >= D.mn && st.amt <= D.mx;
+  const h = $("amtHint");
+  if (st.amt && !okAmt){ h.textContent = `⚠️ Сумма от ${D.mn} до ${D.mx} USDT`; h.className="hint err"; }
+  else { h.textContent = ""; h.className="hint"; }
+
+  document.querySelectorAll(".chip").forEach(c =>
+    c.classList.toggle("on", c.dataset.v == st.amt || (c.dataset.v==="max" && st.amt==D.mx)));
+
+  const valid = okAmt && $("req").value.trim().length >= 6 && st.net;
+  const label = valid ? `Создать заявку · ${fmt(total, st.cur)} ${sym}` : "Создать заявку";
+  if (inTG){
+    tg.MainButton.setParams({text: label, color: valid ? "#ffffff" : "#1d1d21",
+      text_color: valid ? "#000000" : "#55555c", is_active: valid, is_visible: true});
+  } else {
+    $("btn").style.display = "block"; $("btn").disabled = !valid; $("btn").textContent = label;
+  }
+  return valid;
+}
+
+/* ── события ── */
+$("amt").addEventListener("input", e => {
+  let v = e.target.value.replace(",",".").replace(/[^\d.]/g,"");
+  const p = v.split("."); if (p.length>2) v = p[0]+"."+p.slice(1).join("");
+  if (p[1]?.length > 2) v = p[0]+"."+p[1].slice(0,2);
+  e.target.value = v; st.amt = parseFloat(v)||0; calc();
+});
+$("quick").addEventListener("click", e => {
+  const c = e.target.closest(".chip"); if(!c) return;
+  st.amt = c.dataset.v==="max" ? D.mx : +c.dataset.v;
+  $("amt").value = st.amt; haptic(); calc();
+});
+$("curs").addEventListener("click", e => {
+  const c = e.target.closest(".cur"); if(!c) return;
+  st.cur = c.dataset.c; store.set("p2p_cur", st.cur); haptic(); renderCurs(); calc();
+});
+$("nets").addEventListener("click", e => {
+  const n = e.target.closest(".net"); if(!n) return;
+  st.net = n.dataset.n; haptic(); renderNets(); calc();
+});
+$("req").addEventListener("input", () => { store.set("p2p_req", $("req").value); calc(); });
+
+function submit(){
+  if (!calc()) return;
+  const payload = {a: st.amt, c: st.cur, n: st.net, r: $("req").value.trim()};
+  try{ tg?.HapticFeedback?.notificationOccurred("success"); }catch(e){}
+  if (inTG) tg.sendData(JSON.stringify(payload));
+  else alert("Демо-режим. Откройте мини-аппу через кнопку в боте.\n\n" + JSON.stringify(payload));
+}
+$("btn").addEventListener("click", submit);
+
+/* ── старт ── */
+(function init(){
+  if (inTG){
+    tg.ready(); tg.expand();
+    try{ tg.setHeaderColor("#070708"); tg.setBackgroundColor("#070708"); tg.setBottomBarColor?.("#070708"); }catch(e){}
+    tg.MainButton.onClick(submit);
+  }
+  const savedCur = store.get("p2p_cur"); if (savedCur && D.r[savedCur]) st.cur = savedCur;
+  $("req").value = store.get("p2p_req") || "";
+  $("lim").textContent = `${D.mn} – ${D.mx}`;
+  if (!D.o){ $("closed").style.display="grid"; $("pill").classList.add("off"); $("pillTxt").textContent="закрыто"; }
+  renderQuick(); renderCurs(); renderNets(); calc();
+})();
+</script>
+</body>
+</html>
