@@ -152,7 +152,8 @@
 
 <script>
 const tg = window.Telegram?.WebApp;
-const inTG = !!(tg && tg.initData);
+// при запуске с reply-кнопки initData пустой, поэтому проверяем платформу
+const inTG = !!(tg && tg.platform && tg.platform !== "unknown");
 
 const META = {
   UAH:["🇺🇦","Гривна","₴",2], RUB:["🇷🇺","Рубль","₽",2], USD:["🇺🇸","Доллар","$",2],
